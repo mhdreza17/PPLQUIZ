@@ -1,0 +1,68 @@
+name: Selenium tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  selenium:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: quiz_pengupil
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP with mysqli
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.0'
+          extensions: mysqli
+
+      - name: Install mysql client
+        run: sudo apt-get update && sudo apt-get install -y default-mysql-client
+
+      - name: Start PHP built-in server
+        run: php -S 127.0.0.1:8000 -t . > /tmp/php.log 2>&1 &
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            mysqladmin ping -h 127.0.0.1 -uroot -proot &>/dev/null && break || sleep 1
+          done
+
+      - name: Import database
+        run: mysql -h 127.0.0.1 -uroot -proot quiz_pengupil < db/quiz_pengupil.sql
+
+      - name: Create test user
+        run: |
+          HASH=$(php -r "echo password_hash('TestPass1!', PASSWORD_DEFAULT);")
+          mysql -h 127.0.0.1 -uroot -proot -e "INSERT INTO users (name,username,email,password) VALUES ('Test','existinguser','existing@example.com', '${HASH}');" quiz_pengupil
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -q --junitxml=pytest-report.xml
+
+      - name: Upload pytest report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: pytest-report.xml
