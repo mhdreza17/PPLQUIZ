@@ -2,6 +2,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import pytest
 import time
@@ -41,6 +43,8 @@ def alert_text(driver):
 
 def test_login_valid(driver, base_url):
     driver.get(base_url + '/login.php')
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.ID, 'username')))
     driver.find_element(By.ID, 'username').send_keys('existinguser')
     driver.find_element(By.ID, 'InputPassword').send_keys('TestPass1!')
     driver.find_element(By.NAME, 'submit').click()
@@ -50,6 +54,8 @@ def test_login_valid(driver, base_url):
 
 def test_login_empty_password(driver, base_url):
     driver.get(base_url + '/login.php')
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.ID, 'username')))
     driver.find_element(By.ID, 'username').send_keys('existinguser')
     driver.find_element(By.ID, 'InputPassword').clear()
     driver.find_element(By.NAME, 'submit').click()
@@ -59,6 +65,8 @@ def test_login_empty_password(driver, base_url):
 
 def test_login_empty_username(driver, base_url):
     driver.get(base_url + '/login.php')
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.ID, 'username')))
     driver.find_element(By.ID, 'username').clear()
     driver.find_element(By.ID, 'InputPassword').send_keys('doesntmatter')
     driver.find_element(By.NAME, 'submit').click()
@@ -68,6 +76,8 @@ def test_login_empty_username(driver, base_url):
 
 def test_login_not_registered(driver, base_url):
     driver.get(base_url + '/login.php')
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.ID, 'username')))
     driver.find_element(By.ID, 'username').send_keys('no_such_user_123')
     driver.find_element(By.ID, 'InputPassword').send_keys('whatever')
     driver.find_element(By.NAME, 'submit').click()
@@ -77,6 +87,8 @@ def test_login_not_registered(driver, base_url):
 
 def test_login_wrong_password(driver, base_url):
     driver.get(base_url + '/login.php')
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.ID, 'username')))
     driver.find_element(By.ID, 'username').send_keys('existinguser')
     driver.find_element(By.ID, 'InputPassword').send_keys('WrongPassword')
     driver.find_element(By.NAME, 'submit').click()
@@ -86,6 +98,8 @@ def test_login_wrong_password(driver, base_url):
 
 def test_register_password_mismatch(driver, base_url):
     driver.get(base_url + '/register.php')
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.ID, 'name')))
     driver.find_element(By.ID, 'name').send_keys('Tester')
     uniq = str(int(time.time()))
     driver.find_element(By.ID, 'InputEmail').send_keys(f'test{uniq}@example.com')
@@ -99,6 +113,8 @@ def test_register_password_mismatch(driver, base_url):
 
 def test_register_valid(driver, base_url):
     driver.get(base_url + '/register.php')
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.ID, 'name')))
     driver.find_element(By.ID, 'name').send_keys('Tester')
     uniq = str(int(time.time()))
     username = f'autotest{uniq}'
@@ -113,6 +129,8 @@ def test_register_valid(driver, base_url):
 
 def test_register_sql_injection(driver, base_url):
     driver.get(base_url + '/register.php')
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.ID, 'name')))
     driver.find_element(By.ID, 'name').send_keys("Injection Tester")
     payload = "injection' OR '1'='1"
     driver.find_element(By.ID, 'InputEmail').send_keys('inject@example.com')
@@ -127,11 +145,14 @@ def test_register_sql_injection(driver, base_url):
 
 def test_ui_links(driver, base_url):
     driver.get(base_url + '/login.php')
+    wait = WebDriverWait(driver, 10)
+    wait.until(EC.presence_of_element_located((By.LINK_TEXT, 'Register')))
     link = driver.find_element(By.LINK_TEXT, 'Register')
     link.click()
     time.sleep(0.5)
     assert 'register.php' in driver.current_url
     driver.get(base_url + '/register.php')
+    wait.until(EC.presence_of_element_located((By.LINK_TEXT, 'Login')))
     link2 = driver.find_element(By.LINK_TEXT, 'Login')
     link2.click()
     time.sleep(0.5)
